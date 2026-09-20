@@ -442,6 +442,30 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
       background: #904dd6;
     }}
 
+    .btn-mix {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-magenta) 100%);
+      color: #fff;
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(127, 63, 191, 0.35);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }}
+
+    .btn-mix:hover {{
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255, 0, 127, 0.45);
+      filter: brightness(1.12);
+    }}
+
     .empty-state {{
       text-align: center;
       padding: 4rem 1rem;
@@ -684,7 +708,9 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
           <option value="name-asc">Name (A-Z)</option>
           <option value="name-desc">Name (Z-A)</option>
           <option value="res-desc">Resolution (High to Low)</option>
+          <option value="random">🎲 Random Shuffle</option>
         </select>
+        <button class="btn-mix" id="mixBtn" title="Show a random wallpaper">🎲 Mix</button>
       </div>
     </div>
 
@@ -705,7 +731,8 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
       </div>
       <div class="modal-footer">
         <div class="modal-meta" id="modalMeta"></div>
-        <div style="display:flex; gap:0.5rem;">
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="btn btn-preview" id="modalRandomBtn" title="Show another random wallpaper">🎲 Random</button>
           <a class="btn btn-preview" id="modalDirectLink" target="_blank" rel="noopener">Open Raw</a>
           <button class="btn btn-download" id="modalDownload">Download Original</button>
         </div>
@@ -747,12 +774,19 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
         return matchesCategory && matchesSearch;
       }});
 
-      filteredWallpapers.sort((a, b) => {{
-        if (currentSort === 'name-asc') return a.name.localeCompare(b.name);
-        if (currentSort === 'name-desc') return b.name.localeCompare(a.name);
-        if (currentSort === 'res-desc') return (b.width * b.height) - (a.width * a.height);
-        return 0;
-      }});
+      if (currentSort === 'random') {{
+        for (let i = filteredWallpapers.length - 1; i > 0; i--) {{
+          const j = Math.floor(Math.random() * (i + 1));
+          [filteredWallpapers[i], filteredWallpapers[j]] = [filteredWallpapers[j], filteredWallpapers[i]];
+        }}
+      }} else {{
+        filteredWallpapers.sort((a, b) => {{
+          if (currentSort === 'name-asc') return a.name.localeCompare(b.name);
+          if (currentSort === 'name-desc') return b.name.localeCompare(a.name);
+          if (currentSort === 'res-desc') return (b.width * b.height) - (a.width * a.height);
+          return 0;
+        }});
+      }}
 
       renderGrid();
     }}
@@ -915,6 +949,21 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
         applyFilters();
       }});
     }});
+
+    const mixBtn = document.getElementById('mixBtn');
+    const modalRandomBtn = document.getElementById('modalRandomBtn');
+
+    function showRandomWallpaper() {{
+      if (filteredWallpapers.length === 0) return;
+      let randIdx = Math.floor(Math.random() * filteredWallpapers.length);
+      if (filteredWallpapers.length > 1 && randIdx === activeModalIndex) {{
+        randIdx = (randIdx + 1) % filteredWallpapers.length;
+      }}
+      openModal(randIdx);
+    }}
+
+    if (mixBtn) mixBtn.addEventListener('click', showRandomWallpaper);
+    if (modalRandomBtn) modalRandomBtn.addEventListener('click', showRandomWallpaper);
 
     // Initial render
     applyFilters();
