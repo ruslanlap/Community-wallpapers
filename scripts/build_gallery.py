@@ -41,7 +41,7 @@ def process_image(task):
     name_no_ext, ext = os.path.splitext(fname)
 
     raw_url = f"{base_url}/{category}/{quote(fname)}"
-    thumb_rel_url = os.path.relpath(dest_thumb_path, os.path.dirname(os.path.dirname(dest_thumb_path)))
+    thumb_rel_url = f"thumbnails/{category}/{quote(name_no_ext)}.webp"
 
     os.makedirs(os.path.dirname(dest_thumb_path), exist_ok=True)
 
@@ -700,7 +700,7 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
         return `
           <div class="card" data-index="${{index}}">
             <div class="card-image-wrap" onclick="openModal(${{index}})">
-              <img src="${{w.thumb_url}}" alt="${{escapeHtml(w.name)}}" loading="lazy">
+              <img src="${{w.thumb_url}}" alt="${{escapeHtml(w.name)}}" loading="lazy" onerror="this.onerror=null; this.src='${{w.raw_url}}';">
             </div>
             <div class="card-body">
               <div class="card-title" title="${{escapeHtml(w.name)}}">${{escapeHtml(w.name)}}</div>
@@ -728,8 +728,21 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
       const w = filteredWallpapers[index];
 
       modalTitle.textContent = w.name;
-      modalImage.src = w.raw_url;
-      modalMeta.innerHTML = `<strong>Resolution:</strong> ${{w.width}} &times; ${{w.height}} &nbsp;|&nbsp; <strong>Size:</strong> ${{w.size_human}} &nbsp;|&nbsp; <strong>Category:</strong> ${{w.category}}`;
+      // Progressive load: show thumbnail immediately, then upgrade to full resolution
+      modalImage.src = w.thumb_url;
+      if (!w.is_corrupt) {{
+        const fullImg = new Image();
+        fullImg.src = w.raw_url;
+        fullImg.onload = () => {{
+          if (activeModalIndex === index) {{
+            modalImage.src = w.raw_url;
+          }}
+        }};
+      }}
+
+      const resStr = w.width && w.height ? `${{w.width}} &times; ${{w.height}}` : (w.is_corrupt ? '⚠️ Corrupted File' : 'Original');
+      const catLabel = w.category.includes('classic') ? 'Classic Wallpapers' : 'Community Wallpapers';
+      modalMeta.innerHTML = `<strong>Resolution:</strong> ${{resStr}} &nbsp;|&nbsp; <strong>Size:</strong> ${{w.size_human}} &nbsp;|&nbsp; <strong>Collection:</strong> ${{catLabel}}`;
       modalDownload.href = w.raw_url;
       modalDirectLink.href = w.raw_url;
 
