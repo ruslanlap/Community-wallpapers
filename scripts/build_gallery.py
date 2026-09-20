@@ -41,7 +41,8 @@ def process_image(task):
     name_no_ext, ext = os.path.splitext(fname)
 
     raw_url = f"{base_url}/{category}/{quote(fname)}"
-    thumb_rel_url = f"thumbnails/{category}/{quote(name_no_ext)}.webp"
+    thumb_fname = f"{fname}.webp"
+    thumb_rel_url = f"thumbnails/{category}/{quote(thumb_fname)}"
 
     os.makedirs(os.path.dirname(dest_thumb_path), exist_ok=True)
 
@@ -636,7 +637,7 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
         <div class="modal-meta" id="modalMeta"></div>
         <div style="display:flex; gap:0.5rem;">
           <a class="btn btn-preview" id="modalDirectLink" target="_blank" rel="noopener">Open Raw</a>
-          <a class="btn btn-download" id="modalDownload" download>Download Original</a>
+          <button class="btn btn-download" id="modalDownload">Download Original</button>
         </div>
       </div>
     </div>
@@ -710,7 +711,7 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
               </div>
               <div class="card-actions">
                 <button class="btn btn-preview" onclick="openModal(${{index}})">Preview</button>
-                <a class="btn btn-download" href="${{w.raw_url}}" download target="_blank" rel="noopener">Download</a>
+                <button class="btn btn-download" onclick="downloadImage('${{w.raw_url}}', '${{escapeHtml(w.name)}}', this)">Download</button>
               </div>
             </div>
           </div>
@@ -720,6 +721,35 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
 
     function escapeHtml(str) {{
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }}
+
+    async function downloadImage(url, filename, btn) {{
+      const originalText = btn ? btn.textContent : '';
+      if (btn) {{
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+      }}
+      try {{
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      }} catch (err) {{
+        console.warn('Direct blob download fallback to new tab:', err);
+        window.open(url, '_blank');
+      }} finally {{
+        if (btn) {{
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }}
+      }}
     }}
 
     function openModal(index) {{
@@ -743,8 +773,8 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
       const resStr = w.width && w.height ? `${{w.width}} &times; ${{w.height}}` : (w.is_corrupt ? '⚠️ Corrupted File' : 'Original');
       const catLabel = w.category.includes('classic') ? 'Classic Wallpapers' : 'Community Wallpapers';
       modalMeta.innerHTML = `<strong>Resolution:</strong> ${{resStr}} &nbsp;|&nbsp; <strong>Size:</strong> ${{w.size_human}} &nbsp;|&nbsp; <strong>Collection:</strong> ${{catLabel}}`;
-      modalDownload.href = w.raw_url;
       modalDirectLink.href = w.raw_url;
+      modalDownload.onclick = () => downloadImage(w.raw_url, w.name, modalDownload);
 
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
@@ -837,7 +867,7 @@ def main():
             ext = os.path.splitext(fname)[1].lower()
             if ext in valid_exts:
                 src_file = os.path.join(cat, fname)
-                dest_thumb = os.path.join(args.output, "thumbnails", cat, f"{os.path.splitext(fname)[0]}.webp")
+                dest_thumb = os.path.join(args.output, "thumbnails", cat, f"{fname}.webp")
                 tasks.append((src_file, dest_thumb, cat, args.base_url, args.thumb_width, args.thumb_quality))
 
     print(f"Processing {len(tasks)} wallpapers into '{args.output}'...")
