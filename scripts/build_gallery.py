@@ -100,15 +100,9 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
     collage_html = ""
     if has_collage:
         collage_html = f'''
-    <div class="hero-banner-container">
-      <div class="hero-banner-wrap" onclick="openHeroModal()" title="View EndeavourOS Community Collage in full resolution">
+      <div class="hero-collage">
         <img src="collage.webp" alt="EndeavourOS Community Collage" loading="eager" onerror="this.onerror=null; this.src='{raw_collage_url}';">
-        <div class="hero-banner-overlay">
-          <span class="hero-banner-badge">🖼️ EndeavourOS Community Collage &bull; Click to View</span>
-        </div>
-      </div>
-    </div>
-'''
+      </div>'''
 
     html_template = f"""<!DOCTYPE html>
 <html lang="en">
@@ -473,60 +467,21 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
       grid-column: 1 / -1;
     }}
 
-    .hero-banner-container {{
-      margin-bottom: 2rem;
-    }}
-
-    .hero-banner-wrap {{
-      position: relative;
-      width: 100%;
+    .hero-collage {{
+      margin-top: 2rem;
       border-radius: var(--radius-md);
       overflow: hidden;
       border: 1px solid var(--accent-subtle);
-      box-shadow: var(--shadow);
-      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
       background: #10121a;
-      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }}
 
-    .hero-banner-wrap:hover {{
-      transform: translateY(-3px);
-      border-color: var(--accent-purple);
-      box-shadow: 0 8px 30px rgba(127, 63, 191, 0.35);
-    }}
-
-    .hero-banner-wrap img {{
+    .hero-collage img {{
       width: 100%;
       height: auto;
       max-height: 480px;
       object-fit: cover;
       display: block;
-      transition: transform 0.3s ease;
-    }}
-
-    .hero-banner-wrap:hover img {{
-      transform: scale(1.015);
-    }}
-
-    .hero-banner-overlay {{
-      position: absolute;
-      bottom: 1rem;
-      right: 1rem;
-      pointer-events: none;
-    }}
-
-    .hero-banner-badge {{
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: rgba(21, 22, 30, 0.85);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--accent-subtle);
-      color: #fff;
-      padding: 0.4rem 0.85rem;
-      border-radius: 9999px;
-      font-size: 0.85rem;
-      font-weight: 600;
     }}
 
     /* Lightbox Modal */
@@ -688,11 +643,11 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
         <div class="stat-item">Classic: <strong>{classic_count}</strong></div>
         <div class="stat-item">Community: <strong>{community_count}</strong></div>
       </div>
+      {collage_html}
     </div>
   </header>
 
   <div class="container">
-    {collage_html}
     <div class="toolbar">
       <div class="filter-tabs">
         <button class="filter-btn active" data-filter="all">All Wallpapers ({total_count})</button>
@@ -854,21 +809,6 @@ def generate_html(wallpapers, categories, output_dir, repo_name="EndeavourOS-Com
           btn.disabled = false;
         }}
       }}
-    function openHeroModal() {{
-      modalTitle.textContent = "EndeavourOS Community Collage";
-      modalImage.src = "collage.webp";
-      const fullImg = new Image();
-      fullImg.src = "{raw_collage_url}";
-      fullImg.onload = () => {{
-        if (modal.classList.contains('active') && modalTitle.textContent === "EndeavourOS Community Collage") {{
-          modalImage.src = "{raw_collage_url}";
-        }}
-      }};
-      modalMeta.innerHTML = `<strong>Resolution:</strong> 1920 &times; 1080 &nbsp;|&nbsp; <strong>Collection:</strong> Community Collage`;
-      modalDirectLink.href = "{raw_collage_url}";
-      modalDownload.onclick = () => downloadImage("{raw_collage_url}", "EndeavourOS Community Collage.png", modalDownload);
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
     }}
 
     function openModal(index) {{
